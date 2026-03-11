@@ -3,6 +3,8 @@ from pydantic import BaseModel, HttpUrl
 from app.youtube import fetch_comments
 from app.sentiment import analyze_sentiments
 from app.database import save_comments
+from app.toxicity import detect_toxicity
+from app.embeddings import generate_embeddings
 
 app = FastAPI(title="YouTube Comment Intelligence System")
 
@@ -13,24 +15,45 @@ class VideoRequest(BaseModel):
 
 @app.post("/analyze")
 def analyze_video(data: VideoRequest):
+
+    print("Starting analysis...")
+
     try:
+
+        # Convert HttpUrl to string
+        video_url = str(data.video_url)
+
         # Fetch comments
-        comments = fetch_comments(data.video_url, max_comments=data.max_comments)
+        comments = fetch_comments(video_url, max_comments=data.max_comments)
+        print("Comments fetched:", len(comments))
 
         if not comments:
             raise HTTPException(status_code=404, detail="No comments found for this video.")
-
+        
         # Store comments in MongoDB
         save_comments(comments)
+        print("Comments saved to MongoDB")
 
-        # Run sentiment analysis
+        #sentiment analysis
         sentiment_result = analyze_sentiments(comments)
+        print("Sentiment analysis done")
+
+        #Toxicity detection
+        toxicity_result = detect_toxicity(comments)
+        print("Toxicity analysis done")
+
+        # Generate embeddings
+        embeddings = generate_embeddings(comments)
+        print("Embeddings generated")
 
         return {
             "status": "success",
             "total_comments": len(comments),
-            "sentiment_distribution": sentiment_result
+            "sentiment_distribution": sentiment_result,
+            "toxicity_analysis": toxicity_result,
+            "embedding_dimension": len(embeddings[0])
         }
 
     except Exception as e:
+        print("ERROR OCCURRED:", e)
         raise HTTPException(status_code=500, detail=str(e))

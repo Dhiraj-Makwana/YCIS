@@ -5,3 +5,4 @@ pymongo
 google-api-python-client
 transformers
 torch
+sentence-transformers
