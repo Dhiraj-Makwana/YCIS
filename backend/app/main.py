@@ -5,6 +5,7 @@ from app.sentiment import analyze_sentiments
 from app.database import save_comments
 from app.toxicity import detect_toxicity
 from app.embeddings import generate_embeddings
+from app.clustering import cluster_comments
 
 app = FastAPI(title="YouTube Comment Intelligence System")
 
@@ -46,12 +47,17 @@ def analyze_video(data: VideoRequest):
         embeddings = generate_embeddings(comments)
         print("Embeddings generated")
 
+        # Cluster comments
+        clusters = cluster_comments(comments, embeddings)
+        print("clusters generated")
+
         return {
             "status": "success",
             "total_comments": len(comments),
             "sentiment_distribution": sentiment_result,
             "toxicity_analysis": toxicity_result,
-            "embedding_dimension": len(embeddings[0])
+            "embedding_dimension": len(embeddings[0]),
+            "comment_clusters": clusters
         }
 
     except Exception as e:
